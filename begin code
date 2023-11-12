@@ -1,0 +1,44 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Nov 12 17:48:42 2023
+
+@author: M.Konings
+"""
+
+import pandas as pd 
+import numpy as np
+import matplotlib.pyplot as plt 
+import seaborn as sns
+
+plt.style.use("ggplot")
+import nltk 
+nltk.download('vader_lexicon')
+
+#filter de eerste 500 reviews uit de dataset zodat hij minder groot wordt 
+df = pd.read_csv("C:/Users/M.Konings/OneDrive - Terberg Business Lease Group/Documenten/School/.spyder-py3/Reviews.csv")
+df = df.head(500)
+
+#filter het bedrijf in de reviews, dit is een voorbeeld voor het merk McCann's
+bedrijf = df[df["Text"].str.contains("oatmeal" or "MCCanns's" or "oats")]
+bedrijf["Score"].value_counts().sort_index() \
+.plot(kind="bar", title="Aantal reviews per sterren", figsize=(10,5))
+
+from nltk.sentiment import SentimentIntensityAnalyzer
+from tqdm.notebook import tqdm
+
+#pas sentiment analyse toe op de gefilterde reviews (1 is positief, -1 is negatief)
+sia = SentimentIntensityAnalyzer()
+res = {}
+for i, row in tqdm(bedrijf.iterrows(), total=len(bedrijf)) :
+    text = row["Text"]
+    myid = row["Id"]
+    res[myid] = sia.polarity_scores(text)
+
+#voeg de sentiment analyse toe aan de bestaande dataset
+Results = pd.DataFrame(res).T
+Results = Results.reset_index().rename(columns={"index":"Id"})
+Results = Results.merge(df, how="left")
+
+#creer een grafiek 
+sns.barplot(data=Results, x="Score", y="compound")
+plt.show()
